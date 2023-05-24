@@ -2,6 +2,59 @@ import cv2
 import dlib
 import numpy as np
 
+original_landmarks = []
+flipped_landmarks = []
+canvas = None
+saved_frame = None
+
+def draw_asymmetry_lines(frame):
+    if original_landmarks and flipped_landmarks:
+        for (x1, y1), (x2, y2) in zip(original_landmarks, flipped_landmarks):
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+def draw_landmarks(canvas, landmarks, color=(0, 255, 0), thickness=1):
+    num_landmarks = len(landmarks)
+    for i in range(num_landmarks - 1):
+        cv2.line(canvas, landmarks[i], landmarks[i + 1], color, thickness)
+
+def draw_face_lines(canvas, landmarks):
+    face_landmarks = []
+    right_eyebrow_landmarks = []
+    left_eyebrow_landmarks = []
+    nose_landmarks = []
+    right_eye_landmarks = []
+    left_eye_landmarks = []
+    outer_mouth_landmarks = []
+    inner_mouth_landmarks = []
+
+    for i, landmark in enumerate(landmarks):
+        if 0 <= i <= 16:
+            face_landmarks.append(landmark)
+        elif 17 <= i <= 21:
+            right_eyebrow_landmarks.append(landmark)
+        elif 22 <= i <= 26:
+            left_eyebrow_landmarks.append(landmark)
+        elif 27 <= i <= 35:
+            nose_landmarks.append(landmark)
+        elif 36 <= i <= 41:
+            right_eye_landmarks.append(landmark)
+        elif 42 <= i <= 47:
+            left_eye_landmarks.append(landmark)
+        elif 48 <= i <= 60:
+            outer_mouth_landmarks.append(landmark)
+        elif 61 <= i <= 67:
+            inner_mouth_landmarks.append(landmark)
+
+    draw_landmarks(canvas, face_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, right_eyebrow_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, left_eyebrow_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, nose_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, right_eye_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, left_eye_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, outer_mouth_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, inner_mouth_landmarks, color=(0, 255, 0), thickness=1)
+
+
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
@@ -22,8 +75,9 @@ while True:
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
+
     frame = cv2.flip(frame, 1)
-    height, width = frame.shape[:2]
+    height, width = frame.shape[:2] 
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -41,6 +95,10 @@ while True:
     for face in faces:
         shape = predictor(gray, face)
 
+        for i in range(68):
+            landmark = (shape.part(i).x, shape.part(i).y)
+            cv2.circle(frame, landmark, 1, (0, 255, 0), thickness=2)
+
         right_eye_center = np.mean(np.array([(shape.part(i).x, shape.part(i).y) for i in range(36, 42)]), axis=0).astype(int)
         left_eye_center = np.mean(np.array([(shape.part(i).x, shape.part(i).y) for i in range(42, 48)]), axis=0).astype(int)
 
@@ -52,10 +110,10 @@ while True:
             first_eye_distance = eye_distance
 
         scale_factor = first_eye_distance / eye_distance
-
+        '''
         print(f"Right eye center: {right_eye_center}")
         print(f"Left eye center: {left_eye_center}")
-        print(f"Center of eyes: {center_of_eyes}")
+        print(f"Center of eyes: {center_of_eyes}")'''
 
         for i in range(68):
             cv2.circle(frame, (shape.part(i).x, shape.part(i).y), 1, (0, 255, 0), thickness=2)
@@ -81,6 +139,35 @@ while True:
 
         if flip_image:
             frame = cv2.flip(frame, 1)
+        if saved_frame is not None:
+            original_landmarks = []
+            flipped_landmarks = []
+            canvas = np.ones((height, width, 3), dtype="uint8") * 255
+            gray = cv2.cvtColor(saved_frame, cv2.COLOR_BGR2GRAY)
+            faces = detector(gray)
+
+            for face in faces:
+                shape = predictor(gray, face)
+                for i in range(68):
+                    landmark = (shape.part(i).x, shape.part(i).y)
+                    original_landmarks.append(landmark)
+                    cv2.circle(canvas, landmark, 1, (0, 255, 0), thickness=2)
+            flipped_frame = cv2.flip(saved_frame, 1)
+            gray = cv2.cvtColor(flipped_frame, cv2.COLOR_BGR2GRAY)
+            faces = detector(gray)
+            for face in faces:
+                shape = predictor(gray, face)
+                for i in range(68):
+                    landmark = (shape.part(i).x, shape.part(i).y)
+                    flipped_landmarks.append(landmark)
+                    cv2.circle(canvas, landmark, 1, (0, 255, 0), thickness=2)
+            saved_frame = None
+            draw_face_lines(canvas, original_landmarks)
+            #draw_face_lines(canvas, flipped_landmarks)
+            draw_asymmetry_lines(canvas)
+            
+        if canvas is not None:
+            cv2.imshow('Asymmetry', canvas)
 
     cv2.imshow('Webcam Feed', frame)
 
@@ -89,6 +176,8 @@ while True:
         break
     elif key == ord(' '):
         flip_image = not flip_image
+    elif key == ord('f'):
+        saved_frame = frame.copy()
 
 cap.release()
 cv2.destroyAllWindows()
