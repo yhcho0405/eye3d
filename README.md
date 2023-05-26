@@ -28,4 +28,3 @@ $ python main.py
 
 ## reference
 - face detector : shape_predictor_68_face_landmarks
-- helped by ChatGPT
