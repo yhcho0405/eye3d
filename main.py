@@ -11,8 +11,9 @@ def draw_asymmetry_lines(frame):
     if original_landmarks and flipped_landmarks:
         for (x1, y1), (x2, y2) in zip(original_landmarks, flipped_landmarks):
             cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            pass
 
-def draw_landmarks(canvas, landmarks, color=(0, 255, 0), thickness=1):
+def draw_landmarks(canvas, landmarks, color=(0, 255, 0), thickness=2):
     num_landmarks = len(landmarks)
     for i in range(num_landmarks - 1):
         cv2.line(canvas, landmarks[i], landmarks[i + 1], color, thickness)
@@ -45,14 +46,14 @@ def draw_face_lines(canvas, landmarks):
         elif 61 <= i <= 67:
             inner_mouth_landmarks.append(landmark)
 
-    draw_landmarks(canvas, face_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, right_eyebrow_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, left_eyebrow_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, nose_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, right_eye_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, left_eye_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, outer_mouth_landmarks, color=(0, 255, 0), thickness=1)
-    draw_landmarks(canvas, inner_mouth_landmarks, color=(0, 255, 0), thickness=1)
+    draw_landmarks(canvas, face_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, right_eyebrow_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, left_eyebrow_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, nose_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, right_eye_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, left_eye_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, outer_mouth_landmarks, color=(0, 255, 0))
+    draw_landmarks(canvas, inner_mouth_landmarks, color=(0, 255, 0))
 
 
 detector = dlib.get_frontal_face_detector()
@@ -166,10 +167,10 @@ while True:
             #draw_face_lines(canvas, flipped_landmarks)
             draw_asymmetry_lines(canvas)
             
-        if canvas is not None:
-            cv2.imshow('Asymmetry', canvas)
-
-    cv2.imshow('Webcam Feed', frame)
+    if canvas is not None:
+        cv2.imshow('Webcam | Asymmetry', np.vstack((frame, canvas)))
+    else:
+        cv2.imshow('Webcam Feed', frame)
 
     key = cv2.waitKey(1)
     if key & 0xFF == ord('q'):
